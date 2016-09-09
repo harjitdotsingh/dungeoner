@@ -40,7 +40,7 @@ class DungeonsSpec extends FlatSpec with Matchers with BeforeAndAfterAll with In
 
   var graph: TitanGraph = _
 
-  "a 1st level wizard" should "find a Poison Potion in the Throne Room" in {
+  "a 1st level wizard" should "find a Poison Potion in the Throneroom of Elizur" in {
 
     // This is a simple example because there is only one item of this level in the room.
     // So, only filter on level (kind of cheating)
@@ -74,7 +74,7 @@ class DungeonsSpec extends FlatSpec with Matchers with BeforeAndAfterAll with In
 
   }
 
-  "a 5th level wizard-monk" should "find the orb of dragon kind in the crypt" in {
+  "a 5th level wizard-monk" should "find the Orb of Dragon Kind in the Crypt of Valinda" in {
 
     val items = graph.V.hasLabel("room").
       has(Name, "Crypt of Valinda"). // find the crypt
@@ -87,7 +87,7 @@ class DungeonsSpec extends FlatSpec with Matchers with BeforeAndAfterAll with In
     items.head.value("name").toString shouldBe "The Orb of Dragon Kind"
   }
 
-  "a 6th level thief" should "find an uncursed scimitar in Ulani's Cell" in {
+  "a 6th level thief" should "find an uncursed Sylvan Scimitar in Ulani's Cell" in {
 
     // first example
     val edges = graph.V.hasLabel("room").
