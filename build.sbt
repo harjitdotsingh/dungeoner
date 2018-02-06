@@ -2,16 +2,20 @@ name := "dungeoner"
 
 version := "1.0"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.4"
 
-val titanVersion = "1.0.0"
+val janusVersion = "0.2.0"
 
 libraryDependencies ++= Seq (
-  "com.michaelpollmeier" %% "gremlin-scala" % "3.0.2-incubating.2",
-  "com.thinkaurelius.titan" % "titan-core" % titanVersion,
-  "org.scalatest" %% "scalatest" % "2.2.5" % "test"
+  "com.michaelpollmeier" %% "gremlin-scala" % "3.3.0.5",
+  "org.janusgraph" % "janusgraph-core" % janusVersion,
+  "ch.qos.logback" % "logback-classic" % "1.2.3" % Test,
+  "org.scalatest" %% "scalatest" % "3.0.3" % Test
 )
 
-resolvers += Resolver.mavenLocal
+fork in Test := true
 
-resolvers += "Sonatype repo" at "https://oss.sonatype.org/content/repositories/snapshots"
+resolvers ++= Seq(
+  Resolver.mavenLocal,
+  "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public"
+)

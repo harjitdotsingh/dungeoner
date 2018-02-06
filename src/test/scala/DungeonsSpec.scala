@@ -1,14 +1,15 @@
-import com.thinkaurelius.titan.core.{TitanFactory, TitanGraph}
+import org.janusgraph.core.JanusGraphFactory
+import org.janusgraph.core.JanusGraph
 import gremlin.scala._
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 trait InMemoryConnect {
-  def connect(): TitanGraph = {
+  def connect(): JanusGraph = {
     import org.apache.commons.configuration.BaseConfiguration
     val conf = new BaseConfiguration()
     conf.setProperty("storage.backend","inmemory")
-    TitanFactory.open(conf)
+    JanusGraphFactory.open(conf)
   }
 }
 
@@ -38,7 +39,7 @@ class DungeonsSpec extends FlatSpec with Matchers with BeforeAndAfterAll with In
   val ConnectsTo = Key[String]("connectsTo")
   val Contains = Key[String]("contains")
 
-  var graph: TitanGraph = _
+  var graph: JanusGraph = _
 
   "a 1st level wizard" should "find a Poison Potion in the Throneroom of Elizur" in {
 
@@ -166,6 +167,7 @@ class DungeonsSpec extends FlatSpec with Matchers with BeforeAndAfterAll with In
     cell --- ("contains", MinimumLevel -> 1, Paladin -> "paladin", Thief -> "thief", Barbarian -> "barbarian") --> sunBlade
     cell --- ("contains", MinimumLevel -> 5, Thief -> "thief") --> rapier
     cell --- ("contains", MinimumLevel -> 5, Thief -> "thief") --> scimitar
+
   }
 
   override protected def afterAll() = {
