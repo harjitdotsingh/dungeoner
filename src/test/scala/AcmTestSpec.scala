@@ -109,15 +109,15 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
       has(Type, "room").outE().hasLabel("connectsTo").inV().path().by().l()
 
 
-    println("Without By" + graph.V.hasLabel("room").
+    /*println("Without By" + graph.V.hasLabel("room").
       has(Type, "room").outE().hasLabel("connectsTo").inV().path().by().by("acmPermission").l())
 
-    println("*** EdgePath" + path + ": Size" + path.size)
+    println("*** EdgePath" + path + ": Size" + path.size)*/
 
 
     val results = path.map(reducePath)
 
-    println("R" + results.toString())
+    //println("R" + results.toString())
 
 
     assert (results.size >0)
@@ -125,7 +125,7 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
 
   }
 
-  "Redact Paths for Which you don't have permission " should "ReturnPath" in {
+  "Redact Paths for Which you don't have permission " should "ReadActPath" in {
     // Will not have to allow out(), you will have to force users to do a Out(E).inV()
 
 
@@ -183,7 +183,7 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
 
 
       val v = l.get(0).asInstanceOf[Vertex]
-      println("Checking for Removal" + v.valueMap,vv.valueMap)
+     // println("Checking for Removal" + v.valueMap,vv.valueMap)
       if (v.id().toString != (vv.id.toString)) {
         seq :+= p
       }
@@ -222,8 +222,8 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
       has(Type, "room").outE().inV().path().by().l()
 
 
-    println("+++++Without By" + graph.V.hasLabel("room").
-      has(Type, "room").outE().inV().path().by().by("acmPermission").l())
+   /* println("+++++Without By" + graph.V.hasLabel("room").
+      has(Type, "room").outE().inV().path().by().by("acmPermission").l())*/
 
 
   }
@@ -233,7 +233,7 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
 
     val l = p.objects()
 
-    println("p" + p.toString)
+    //println("p" + p.toString)
     val list = List.empty
     val seq = l.asScala.map(ll => {
 
@@ -260,62 +260,7 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
   }
 
 
-  "Pull Permissions" should "Have be 1 " in {
 
-
-    // These tests were written to get a test the output of  the Graph API
-    val edges = graph.V.hasLabel("room").
-      has(Name, "Throneroom of Elizur")
-      .has(Type, "room").
-      outE(). // traverse to edges
-      hasLabel("hasACM")
-
-    println("path" + graph.V.hasLabel("room").
-      has(Name, "Throneroom of Elizur").
-      out())
-    println("pathTre" + graph.V.hasLabel("room").
-      has(Name, "Throneroom of Elizur").
-      out().tree())
-
-    print("fullPath from a vertex" + graph.V.hasLabel("room").path().unfold().toList())
-
-    val l = graph.V.has(Type, "room").path().toList()
-
-    l.foreach(ll => {
-      var i = 0;
-      println("pathValue" + ll.objects())
-
-      ll.objects().forEach(v => {
-
-        val vv = graph.V(v).outE("hasACM").inV().headOption()
-        println(graph.V(v).outE("hasACM").inV())
-
-        vv match {
-
-          case None => println("NO")
-          case (v) => println("Value" + v.get.property("permission").value())
-        }
-      })
-    })
-
-
-    print("fullPath from a vertexTreees" + graph.V.
-      outE().inV().path().fold().l())
-
-
-    println("tree" + graph.V.hasLabel("room").
-      has(Name, "Throneroom of Elizur").
-      outE(). // traverse to edges
-      hasLabel("hasACM").tree().toSet())
-
-    graph.V.hasLabel("room").
-      has(Name, "Throneroom of Elizur").
-      outE(). // traverse to edges
-      hasLabel("hasACM").tree()
-
-
-
-  }
 
 
   override protected def beforeAll() = {
