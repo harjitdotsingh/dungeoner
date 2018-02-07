@@ -120,32 +120,47 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
     println("R" + results.toString())
 
 
+    assert (results.size >0)
+
+
   }
 
   "Redact Paths for Which you don't have permission " should "ReturnPath" in {
     // Will not have to allow out(), you will have to force users to do a Out(E).inV()
 
 
+
+    // Pulls all Nodes and Edges which have the label and Emit AcmPermissions Edges with an value of 8 means they are unaccessible
+    // In our Sample ThroneRoom has an edge with acmPermission of 8 and then has an path from it to WeedRoom.
+      // The method redact will Remove the  nodes which have an acmPermission of 8.
     val ppath = graph.V.hasLabel("room").
       has(Type, "room").outE().hasLabel("connectsTo").inV().path().by().by("acmPermission").l()
-    println("*** ppath" + ppath + ": Size" + ppath.size)
+    //println("*** ppath" + ppath + ": Size" + ppath.size)
 
     val path = graph.V.hasLabel("room").
       has(Type, "room").outE().hasLabel("connectsTo").inV().path().by().by("acmPermission").l()
 
-    println("*** EdgePath" + path + ": Size" + path.size)
+    //println("*** EdgePath" + path + ": Size" + path.size)
 
-
+    //Get the starting nodes which have an edge with acmPermission 8
+    // In our Sample this should be 1 only
     val p = path.map(pathToBeRedacted).flatten
 
-    println("*** Path to Remove" + p + ": Size" + p.size)
+    //println("*** Path to Remove" + p + ": Size" + p.size)
+
 
     p.size shouldBe 1
 
+    // Remove all the nodes from the Path which start from the Node and have a permission of 8
     val generatedResults = path.map(pp => removeRedacted(p.head, pp))
 
-    println("*** Redacted Path" + generatedResults + ": Size" + generatedResults.size)
 
+    // Based on the test data the node with name Halians Library is the one which will be removed from the path
+    p.head.property(Name).value() shouldBe("Halian's Library")
+
+
+    // Compare the size of the path list from the original List. There should be one Node which should be removed.
+    // hance the difference between the size would be one.
     val filteredList = generatedResults.filter(l=>l.size >0)
     path.size  - filteredList.size shouldBe 1
 
@@ -154,32 +169,6 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
 
 
 
-
-  "Redact Bi Directional Paths for Which you don't have permission " should "ReturnPath" in {
-    // Will not have to allow out(), you will have to force users to do a Out(E).inV()
-
-
-    val ppath = graph.V.
-      has(Type, "bbRoom").outE().hasLabel("bConnectsTo").inV().path().by().l()
-
-      println("*** ppath" + ppath + ": Size" + ppath.size)
-
-
-    val simpleppath = graph.V.
-      has(Type, "bbRoom").outE().hasLabel("bConnectsTo").inV().path().by().simplePath().l()
-    println("*** SimplePath" + simpleppath + ": Size" + simpleppath.size)
-
-
-    val path = graph.V.
-      has(Type, "bbRoom").outE().hasLabel("bConnectsTo").inV().path().by().by("acmPermission").l()
-
-    println("*** EdgePath" + path + ": Size" + path.size)
-
-    val p = path.map(pathToBeRedacted).flatten
-
-    println("*** Path to Remove" + p + ": Size" + p.size)
-
-  }
 
 
 
@@ -214,7 +203,7 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
       val e = l.get(1).asInstanceOf[String]
       println(l.get(0).asInstanceOf[Vertex].valueMap,e,l.get(2).asInstanceOf[Vertex].valueMap)
       if (e.equalsIgnoreCase("8")) {
-        println("ignore",l.get(2).asInstanceOf[Vertex].valueMap)
+        //println("ignore",l.get(2).asInstanceOf[Vertex].valueMap)
         seq :+= l.get(2).asInstanceOf[Vertex]
       }
     }
@@ -272,6 +261,9 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
 
 
   "Pull Permissions" should "Have be 1 " in {
+
+
+    // These tests were written to get a test the output of  the Graph API
     val edges = graph.V.hasLabel("room").
       has(Name, "Throneroom of Elizur")
       .has(Type, "room").
@@ -321,6 +313,8 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
       outE(). // traverse to edges
       hasLabel("hasACM").tree()
 
+
+
   }
 
 
@@ -345,6 +339,7 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
     // create bidirectional room edges
 
     throneRoom <-- ("hasACM", acmProp -> "1") --> acmNodeTrue
+    // Throne Room Connects to Library and Library connects to WeedRoom.
     throneRoom --- ("connectsTo", acmProp -> "8") --> library
     throneRoom <-- ("connectsTo", acmProp -> "1") --> crypt
     crypt <-- ("connectsTo", acmProp -> "1") --> cell
