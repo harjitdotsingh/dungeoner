@@ -6,7 +6,6 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 import scala.collection.JavaConverters._
 
-
 trait InMemoryConnectScala {
   def connect(): ScalaGraph = {
     import org.apache.commons.configuration.BaseConfiguration
@@ -34,11 +33,14 @@ case class StartingVertex(v: Vertex) extends Edges
 
 case class EndingVertex(v: Vertex) extends Edges
 
+case class EdgeOut(val acm: Option[String], vertex: Option[List[EndingVertex]])
+    extends Edges
 
-case class EdgeOut(val acm: Option[String], vertex: Option[List[EndingVertex]]) extends Edges
-
-class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InMemoryConnectScala {
-
+class AcmTestSpec
+    extends FlatSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with InMemoryConnectScala {
 
   val atomEnergy = Key[java.util.List[String]]("atomEnergy")
   val dispOnlyTo = Key[Set[String]]("dispOnlyTo")
@@ -69,13 +71,11 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
   val regions = Key[Set[String]]("regions")
   val clerances = Key[Set[String]]("fClearance")
 
-
   val orgs = Key[Set[String]]("orgs")
   val missions = Key[Set[String]]("missions")
   val fShare = Key[Set[String]]("fShare")
   val fRegions = Key[Set[String]]("fRegions")
   val ownerProd = Key[Set[String]]("ownerProd")
-
 
   val Name = Key[String]("name")
   val Type = Key[String]("type")
@@ -95,95 +95,85 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
 
   val acmProp = Key[String]("acmPermission")
 
-
   var graph: ScalaGraph = _
-
-
 
   "Pull Permissions from Edges" should "ReturnPath" in {
     // Will not have to allow out(), you will have to force users to do a Out(E).inV()
-    val edges = graph.V.hasLabel("room").
-      has(Type, "room").outE("contains")
+    val edges = graph.V.hasLabel("room").has(Type, "room").outE("contains")
 
-    val path = graph.V.hasLabel("room").
-      has(Type, "room").outE().hasLabel("connectsTo").inV().path().by().l()
-
-
-    /*println("Without By" + graph.V.hasLabel("room").
-      has(Type, "room").outE().hasLabel("connectsTo").inV().path().by().by("acmPermission").l())
-
-    println("*** EdgePath" + path + ": Size" + path.size)*/
-
+    val path = graph.V
+      .hasLabel("room")
+      .has(Type, "room")
+      .outE()
+      .hasLabel("connectsTo")
+      .inV()
+      .path()
+      .by()
+      .l()
 
     val results = path.map(reducePath)
 
-    //println("R" + results.toString())
-
-
-    assert (results.size >0)
-
+    assert(results.size > 0)
 
   }
 
   "Redact Paths for Which you don't have permission " should "ReadActPath" in {
-    // Will not have to allow out(), you will have to force users to do a Out(E).inV()
 
+      /* We Pull all Nodes and Edges which have the label and Emit AcmPermissions.
+      Edges with an value of 8 means they are unaccessible.
+      Eventhough we have bidirectional edges, we will only be assuming directed graphs because things can get trick when
+      In our Sample ThroneRoom has an edge with acmPermission of 8 and then has an path from it to WeedRoom.
+      The method redact will Remove the  nodes which have an acmPermission of 8. */
 
+    val ppath = graph.V
+      .hasLabel("room")
+      .has(Type, "room")
+      .outE()
+      .hasLabel("connectsTo")
+      .inV()
+      .path()
+      .by()
+      .by("acmPermission")
+      .l()
 
-    // Pulls all Nodes and Edges which have the label and Emit AcmPermissions Edges with an value of 8 means they are unaccessible
-    // In our Sample ThroneRoom has an edge with acmPermission of 8 and then has an path from it to WeedRoom.
-      // The method redact will Remove the  nodes which have an acmPermission of 8.
-    val ppath = graph.V.hasLabel("room").
-      has(Type, "room").outE().hasLabel("connectsTo").inV().path().by().by("acmPermission").l()
-    //println("*** ppath" + ppath + ": Size" + ppath.size)
-
-    val path = graph.V.hasLabel("room").
-      has(Type, "room").outE().hasLabel("connectsTo").inV().path().by().by("acmPermission").l()
-
-    //println("*** EdgePath" + path + ": Size" + path.size)
+    val path = graph.V
+      .hasLabel("room")
+      .has(Type, "room")
+      .outE()
+      .hasLabel("connectsTo")
+      .inV()
+      .path()
+      .by()
+      .by("acmPermission")
+      .l()
 
     //Get the starting nodes which have an edge with acmPermission 8
     // In our Sample this should be 1 only
     val p = path.map(pathToBeRedacted).flatten
-
-    //println("*** Path to Remove" + p + ": Size" + p.size)
-
 
     p.size shouldBe 1
 
     // Remove all the nodes from the Path which start from the Node and have a permission of 8
     val generatedResults = path.map(pp => removeRedacted(p.head, pp))
 
-
     // Based on the test data the node with name Halians Library is the one which will be removed from the path
-    p.head.property(Name).value() shouldBe("Halian's Library")
-
+    p.head.property(Name).value() shouldBe ("Halian's Library")
 
     // Compare the size of the path list from the original List. There should be one Node which should be removed.
-    // hance the difference between the size would be one.
-    val filteredList = generatedResults.filter(l=>l.size >0)
-    path.size  - filteredList.size shouldBe 1
-
+    // hence the difference between the size would be one.
+    val filteredList = generatedResults.filter(l => l.size > 0)
+    path.size - filteredList.size shouldBe 1
 
   }
 
-
-
-
-
-
-
   def removeRedacted(vv: Vertex, p: Path): Seq[Path] = {
-
 
     var seq: Seq[Path] = Seq.empty
     val l = p.objects()
 
     if (l.size() == 3) {
 
-
       val v = l.get(0).asInstanceOf[Vertex]
-     // println("Checking for Removal" + v.valueMap,vv.valueMap)
       if (v.id().toString != (vv.id.toString)) {
         seq :+= p
       }
@@ -191,7 +181,6 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
 
     seq
   }
-
 
   def pathToBeRedacted(p: Path): Seq[Vertex] = {
 
@@ -201,9 +190,10 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
 
     if (l.size() == 3) {
       val e = l.get(1).asInstanceOf[String]
-      println(l.get(0).asInstanceOf[Vertex].valueMap,e,l.get(2).asInstanceOf[Vertex].valueMap)
+      println(l.get(0).asInstanceOf[Vertex].valueMap,
+              e,
+              l.get(2).asInstanceOf[Vertex].valueMap)
       if (e.equalsIgnoreCase("8")) {
-        //println("ignore",l.get(2).asInstanceOf[Vertex].valueMap)
         seq :+= l.get(2).asInstanceOf[Vertex]
       }
     }
@@ -212,31 +202,21 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
 
   }
 
-
   "Pull Permissions from Edges With By" should "ReturnPath" in {
     // Will not have to allow out(), you will have to force users to do a Out(E).inV()
-    val edges = graph.V.hasLabel("room").
-      has(Type, "room").outE("contains")
+    val edges = graph.V.hasLabel("room").has(Type, "room").outE("contains")
 
-    val path = graph.V.hasLabel("room").
-      has(Type, "room").outE().inV().path().by().l()
-
-
-   /* println("+++++Without By" + graph.V.hasLabel("room").
-      has(Type, "room").outE().inV().path().by().by("acmPermission").l())*/
-
+    val path =
+      graph.V.hasLabel("room").has(Type, "room").outE().inV().path().by().l()
 
   }
 
   def reducePath(p: Path): Seq[Edges] = {
 
-
     val l = p.objects()
 
-    //println("p" + p.toString)
     val list = List.empty
     val seq = l.asScala.map(ll => {
-
 
       ll match {
 
@@ -259,16 +239,11 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
     seq
   }
 
-
-
-
-
   override protected def beforeAll() = {
     graph = connect()
 
     val acmNodeTrue = createACMNodeWithTrue()
     val acmNodeFalse = createACMNodeWithFalse()
-
 
     // create room nodes
     val throneRoom = graph + ("room", Name -> "Throneroom of Elizur", Type -> "room", acmProp -> "1")
@@ -276,10 +251,9 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
     val crypt = graph + ("room", Name -> "Crypt of Valinda", Type -> "room", acmProp -> "0")
     val library = graph + ("room", Name -> "Halian's Library", Type -> "room", acmProp -> "1")
     val weedRoom = graph + ("room", Name -> "WeedRoom", Type -> "room", acmProp -> "1")
-    val biWeedRoom = graph + ( "room",Name -> "BiDirectionalWeedRoom", Type -> "bbRoom", acmProp -> "1")
+    val biWeedRoom = graph + ("room", Name -> "BiDirectionalWeedRoom", Type -> "bbRoom", acmProp -> "1")
     val bbRoom = graph + ("room", Name -> "BDRoom", Type -> "bbRoom", acmProp -> "1")
     val dRoom = graph + ("room", Name -> "Droom", Type -> "bbRoom", acmProp -> "1")
-
 
     // create bidirectional room edges
 
@@ -295,7 +269,6 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
 
     throneRoom --- ("bConnectsTo", acmProp -> "1") --> dRoom
 
-
     // create magic item nodes
     val poisonPotion = graph + ("magicItem", Name -> "Poison Potion", IsCursed -> "yes", acmProp -> "1")
     val talismanGood = graph + ("magicItem", Name -> "Talisman of Pure Good", IsCursed -> "no", acmProp -> "1")
@@ -310,7 +283,6 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
     val rapier = graph + ("magicItem", Name -> "Rapier of Puncturing", IsCursed -> "yes", acmProp -> "1")
     val scimitar = graph + ("magicItem", Name -> "Sylvan Scimitar", IsCursed -> "no", acmProp -> "1")
 
-
     val acmScimitar = graph + ("acmmagicItem", Name -> "ACM-Sylvan Scimitar", IsCursed -> "no", acmProp -> "1")
 
     poisonPotion <-- ("hasACM", acmProp -> "1") --> acmNodeTrue
@@ -319,7 +291,6 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
     flaskCurse <-- ("hasACM", acmProp -> "1") --> acmNodeTrue
 
     // create directed edges from rooms to magic items
-
 
     throneRoom --- ("contains", MinimumLevel -> 1, Wizard -> "wizard", acmProp -> "1") --> poisonPotion
     throneRoom --- ("contains", MinimumLevel -> 3, Wizard -> "wizard", Paladin -> "paladin", Barbarian -> "barbarian", Monk -> "monk", acmProp -> "1") --> talismanGood
@@ -344,9 +315,7 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
     val prop = Key[String]("permission")
     acm.setProperty(prop, "1")
 
-
     acm
-
 
   }
 
@@ -356,9 +325,7 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
     val prop = Key[String]("permission")
     acm.setProperty(prop, "0")
 
-
     acm
-
 
   }
 
@@ -366,4 +333,3 @@ class AcmTestSpec extends FlatSpec with Matchers with BeforeAndAfterAll with InM
     graph.close()
   }
 }
-
